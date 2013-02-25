@@ -4,11 +4,15 @@ Python unit testing framework, written to learn Python.
 
 import re
 
+class FailedAssertion(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
+
 class TestCase:
     TEST_NAME_REGEXP = re.compile('^test')
-
-    def __init__(self):
-        print "created testcase"
 
     def _tests(self):
         tests = {}
@@ -18,6 +22,13 @@ class TestCase:
                 tests[method_name] = method
 
         return tests;
+
+
+    # ASSERTIONS
+    def assertEqual(self, expected, actual, message = None):
+        if expected != actual:
+            message = "expected %s to equal %s but it was not." % (actual, expected) if not message else message
+            raise FailedAssertion(message)
 
     @classmethod
     def run(klass):
