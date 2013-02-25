@@ -3,6 +3,7 @@ Python unit testing framework, written to learn Python.
 """
 
 import re
+import sys
 
 class FailedAssertion(Exception):
     def __init__(self, value):
@@ -34,4 +35,9 @@ class TestCase:
     def run(klass):
         instance = klass();
         for name, test in instance._tests().items():
-            test()
+            try:
+                test()
+                sys.stdout.write('.')
+            except snakeunit.FailedAssertion:
+                sys.stdout.write('F')
+                raise
