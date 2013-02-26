@@ -1,6 +1,7 @@
 import sys
 import StringIO
 import snakeunit
+import re
 
 class MainTestCase(snakeunit.TestCase):
 
@@ -34,6 +35,39 @@ class TestResultTestCase(snakeunit.TestCase):
         self.assertEqual(False, result.didPass())
         self.assertEqual(True, result.wasSkipped())
 
+class ConsoleFormatterTestCase(snakeunit.TestCase):
+
+    def testExecutedPrintsProgress(self):
+        output = StringIO.StringIO()
+        formatter = snakeunit.ConsoleFormatter(output)
+        formatter.testExecuted(snakeunit.TestResult.passed('testFirstGreen'))
+        formatter.testExecuted(snakeunit.TestResult.passed('testSecondGreen'))
+        formatter.testExecuted(snakeunit.TestResult.skipped('testThirdSkipped'))
+        formatter.testExecuted(snakeunit.TestResult.passed('testFourthGreen'))
+        formatter.testExecuted(snakeunit.TestResult.failed('testFifthRed', AssertionError('some failure')))
+
+        self.assertEqual("..S.F", output.getvalue())
+
+    def testPrintsSummary(self):
+        output = StringIO.StringIO()
+        formatter = snakeunit.ConsoleFormatter(output)
+        formatter.suiteFinished([snakeunit.TestResult.passed('testFirstGreen'),
+                                 snakeunit.TestResult.skipped('testSecondSkipped'),
+                                 snakeunit.TestResult.failed('testThirdRed', AssertionError('some failure'))])
+
+        regexp = re.compile('3 tests executed \(Passed: 1, Skipped: 1, Failed: 1\)')
+        self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
+
+    def testPrintsFailedTestsInTheSummary(self):
+        output = StringIO.StringIO()
+        formatter = snakeunit.ConsoleFormatter(output)
+        formatter.suiteFinished([snakeunit.TestResult.passed('testFirstGreen'),
+                                 snakeunit.TestResult.failed('testThirdRed', AssertionError('1!=2'))])
+
+        regexp = re.compile("1\) Failure:\ntestThirdRed\n1!=2")
+        self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
+
+
 class RunnerTestCase(snakeunit.TestCase):
 
     class ExampleTest(snakeunit.TestCase):
@@ -50,7 +84,7 @@ class RunnerTestCase(snakeunit.TestCase):
 
     def testSingleTestCase(self):
         output = StringIO.StringIO()
-        runner = snakeunit.Runner(output)
+        runner = snakeunit.Runner(snakeunit.ConsoleFormatter(output))
         runner.register(RunnerTestCase.ExampleTest)
         runner.run()
         # this test is order dependent...
@@ -82,4 +116,5 @@ runner.register(MainTestCase)
 runner.register(TestResultTestCase)
 runner.register(AssertionsTestCase)
 runner.register(RunnerTestCase)
+runner.register(ConsoleFormatterTestCase)
 runner.run()

@@ -73,10 +73,44 @@ class TestCase:
 
         return testResults
 
-class Runner:
+class ConsoleFormatter:
+
     def __init__(self, output = sys.stdout):
-        self.testCases = []
         self.output = output
+
+    def testExecuted(self, result):
+        if result.didPass():
+            self.output.write('.')
+        elif result.didFail():
+            self.output.write('F')
+        elif result.wasSkipped():
+            self.output.write('S')
+
+    def suiteFinished(self, suiteResults):
+        self.output.write("\n")
+        failedCounter = 0
+        indent = ' ' * 2
+        self.output.write("\n")
+        for result in suiteResults:
+            if result.didFail():
+                failedCounter += 1
+                self.output.write("%s%d) Failure:\n" % (indent, failedCounter))
+                self.output.write("%s\n" % (result.name))
+                self.output.write("%s\n" % (str(result.exception)))
+                self.output.write("\n")
+        self.output.write("\n")
+        total = len(suiteResults)
+        passed = sum(1 for res in suiteResults if res.didPass())
+        skipped = sum(1 for res in suiteResults if res.wasSkipped())
+        failed = sum(1 for res in suiteResults if res.didFail())
+        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (total, passed, skipped, failed))
+
+
+class Runner:
+    def __init__(self, formatter = ConsoleFormatter()):
+        self.testCases = []
+        self.output = sys.stdout
+        self.formatter = formatter
 
     def register(self, testCase):
         self.testCases.append(testCase)
@@ -86,19 +120,6 @@ class Runner:
         for testCase in self.testCases:
             results = testCase.run()
             for result in results:
-                if result.didPass():
-                    self.output.write('.')
-                elif result.didFail():
-                    self.output.write('F')
-                elif result.wasSkipped():
-                    self.output.write('S')
-
+                self.formatter.testExecuted(result)
             suiteResults.extend(results)
-
-        self.output.write("\n")
-        for result in suiteResults:
-            if result.didFail():
-                self.output.write(result.name + "\n")
-                self.output.write(str(result.exception) + "\n")
-                self.output.write("\n")
-        self.output.write("\n")
+        self.formatter.suiteFinished(suiteResults)
