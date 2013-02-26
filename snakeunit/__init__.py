@@ -32,12 +32,25 @@ class TestCase:
             raise FailedAssertion(message)
 
     @classmethod
-    def run(klass):
+    def run(klass, output):
         instance = klass();
         for name, test in instance._tests().items():
             try:
                 test()
-                sys.stdout.write('.')
-            except snakeunit.FailedAssertion:
-                sys.stdout.write('F')
+                output.write('.')
+            except FailedAssertion:
+                output.write('F')
                 raise
+
+class Runner:
+    def __init__(self, output = sys.stdout):
+        self.testCases = []
+        self.output = output
+
+    def register(self, testCase):
+        self.testCases.append(testCase)
+
+    def run(self):
+        for testCase in self.testCases:
+            testCase.run(self.output)
+        self.output.write("\n")

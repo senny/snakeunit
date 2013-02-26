@@ -1,3 +1,5 @@
+import sys
+import StringIO
 import snakeunit
 
 class MainTestCase(snakeunit.TestCase):
@@ -7,6 +9,19 @@ class MainTestCase(snakeunit.TestCase):
 
     def testSecond(self):
         None
+
+class RunnerTestCase(snakeunit.TestCase):
+
+    class ExampleTest(snakeunit.TestCase):
+        def testTruth(self):
+            self.assertEqual(True, True)
+
+    def testSingleTestCase(self):
+        output = StringIO.StringIO()
+        runner = snakeunit.Runner(output)
+        runner.register(RunnerTestCase.ExampleTest)
+        runner.run()
+        self.assertEqual(".\n", output.getvalue())
 
 class AssertionsTestCase(snakeunit.TestCase):
 
@@ -28,5 +43,9 @@ class AssertionsTestCase(snakeunit.TestCase):
         except snakeunit.FailedAssertion:
             None
 
-MainTestCase.run()
-AssertionsTestCase.run()
+
+runner = snakeunit.Runner()
+runner.register(MainTestCase)
+runner.register(AssertionsTestCase)
+runner.register(RunnerTestCase)
+runner.run()
