@@ -5,12 +5,8 @@ Python unit testing framework, written to learn Python.
 import re
 import sys
 
-class FailedAssertion(Exception):
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
+class TestSkipped(Exception):
+    None
 
 class TestResult:
 
@@ -52,11 +48,14 @@ class TestCase:
 
         return tests;
 
+    def skip(self):
+        raise TestSkipped()
+
     # ASSERTIONS
     def assertEqual(self, expected, actual, message = None):
         if expected != actual:
             message = "expected %s to equal %s but it was not." % (actual, expected) if not message else message
-            raise FailedAssertion(message)
+            raise AssertionError(message)
 
     @classmethod
     def run(klass):
@@ -67,8 +66,10 @@ class TestCase:
             try:
                 test()
                 testResults.append(TestResult.passed(name))
-            except FailedAssertion, e:
+            except AssertionError, e:
                 testResults.append(TestResult.failed(name, e))
+            except TestSkipped:
+                testResults.append(TestResult.skipped(name))
 
         return testResults
 
@@ -89,6 +90,8 @@ class Runner:
                     self.output.write('.')
                 elif result.didFail():
                     self.output.write('F')
+                elif result.wasSkipped():
+                    self.output.write('S')
 
             suiteResults.extend(results)
 

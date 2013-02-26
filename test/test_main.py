@@ -43,12 +43,18 @@ class RunnerTestCase(snakeunit.TestCase):
         def testFailure(self):
             self.assertEqual(False, True)
 
+        def testSkipped(self):
+            self.skip()
+            # terminate somehow
+            print "FAILED!"
+
     def testSingleTestCase(self):
         output = StringIO.StringIO()
         runner = snakeunit.Runner(output)
         runner.register(RunnerTestCase.ExampleTest)
         runner.run()
-        self.assertEqual("F.", output.getvalue().split("\n")[0])
+        # this test is order dependent...
+        self.assertEqual("FS.", output.getvalue().split("\n")[0])
 
 class AssertionsTestCase(snakeunit.TestCase):
 
@@ -67,7 +73,7 @@ class AssertionsTestCase(snakeunit.TestCase):
             self.assertEqual(1, 2)
             # terminate somehow
             print "FAILED!"
-        except snakeunit.FailedAssertion:
+        except AssertionError:
             None
 
 
