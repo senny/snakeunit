@@ -15,6 +15,10 @@ class TestResult(object):
         self.name = name
         self.state = state
         self.exception = exception
+        self.testCase = None
+
+    def testCaseName(self):
+        return self.testCase.__name__ if self.testCase else ''
 
     def didPass(self):
         return self.state == 'passed'
@@ -58,22 +62,6 @@ class TestCase(object):
             message = "expected %s to equal %s but it was not." % (actual, expected) if not message else message
             raise AssertionError(message)
 
-    @classmethod
-    def run(klass):
-        testResults = []
-        instance = klass();
-        for name, test in instance._tests().items():
-            result = None
-            try:
-                test()
-                testResults.append(TestResult.passed(name))
-            except AssertionError, e:
-                testResults.append(TestResult.failed(name, e))
-            except TestSkipped:
-                testResults.append(TestResult.skipped(name))
-
-        return testResults
-
 class ConsoleFormatter(object):
 
     def __init__(self, output = sys.stdout):
@@ -96,7 +84,7 @@ class ConsoleFormatter(object):
             if result.didFail():
                 failedCounter += 1
                 self.output.write("%s%d) Failure:\n" % (indent, failedCounter))
-                self.output.write("%s\n" % (result.name))
+                self.output.write("%s(%s)\n" % (result.name, result.testCaseName()))
                 self.output.write("%s\n" % (str(result.exception)))
                 self.output.write("\n")
         total = len(suiteResults)
@@ -118,11 +106,27 @@ class Runner(object):
     def run(self):
         suiteResults = []
         for testCase in self.testCases:
-            results = testCase.run()
-            for result in results:
-                self.formatter.testExecuted(result)
-            suiteResults.extend(results)
+            testCaseResults = self.runTestCase(testCase)
+            suiteResults.extend(testCaseResults)
         self.formatter.suiteFinished(suiteResults)
+
+    def runTestCase(self, testCase):
+        results = []
+        instance = testCase();
+        for name, test in instance._tests().items():
+            result = None
+            try:
+                test()
+                result = TestResult.passed(name)
+            except AssertionError, e:
+                result = TestResult.failed(name, e)
+            except TestSkipped:
+                result = TestResult.skipped(name)
+            result.testCase = testCase
+            self.formatter.testExecuted(result)
+            results.append(result)
+
+        return results
 
     @classmethod
     def runAll(klass, formatter = ConsoleFormatter()):

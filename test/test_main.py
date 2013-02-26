@@ -9,6 +9,11 @@ class TestResultTestCase(snakeunit.TestCase):
         result = snakeunit.TestResult.passed('testMyExample')
         self.assertEqual('testMyExample', result.name)
 
+    def testKnowsTheNameOfItsTestCase(self):
+        result = snakeunit.TestResult.passed('testMyExample')
+        result.testCase = TestResultTestCase
+        self.assertEqual('TestResultTestCase', result.testCaseName())
+
     def testSuccessfulResult(self):
         result = snakeunit.TestResult.passed('testExample')
         self.assertEqual(True, result.didPass())
@@ -47,32 +52,34 @@ class ConsoleFormatterTestCase(snakeunit.TestCase):
                                  snakeunit.TestResult.skipped('testSecondSkipped'),
                                  snakeunit.TestResult.failed('testThirdRed', AssertionError('some failure'))])
 
-        regexp = re.compile('3 tests executed \(Passed: 1, Skipped: 1, Failed: 1\)')
+        regexp = re.compile(re.escape('3 tests executed (Passed: 1, Skipped: 1, Failed: 1)'))
         self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
 
     def testPrintsFailedTestsInTheSummary(self):
         output = StringIO.StringIO()
         formatter = snakeunit.ConsoleFormatter(output)
-        formatter.suiteFinished([snakeunit.TestResult.passed('testFirstGreen'),
-                                 snakeunit.TestResult.failed('testThirdRed', AssertionError('1!=2'))])
+        failedResult = snakeunit.TestResult.failed('testThirdRed', AssertionError('1!=2'))
+        failedResult.testCase = ConsoleFormatterTestCase
+        formatter.suiteFinished([failedResult])
 
-        regexp = re.compile("1\) Failure:\ntestThirdRed\n1!=2")
+        regexp = re.compile(re.escape("1) Failure:\ntestThirdRed(ConsoleFormatterTestCase)\n1!=2"))
         self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
 
 
 class RunnerTestCase(snakeunit.TestCase):
 
-    class ExampleTest(snakeunit.TestCase):
+    class PassingTestCase(snakeunit.TestCase):
         def testSuccess(self):
             self.assertEqual(True, True)
-
-        def testFailure(self):
-            self.assertEqual(False, True)
 
         def testSkipped(self):
             self.skip()
             # terminate somehow
             print "FAILED!"
+
+    class FailingTestCase(snakeunit.TestCase):
+        def testFailure(self):
+            self.assertEqual(False, True)
 
         def testAssertKeywordWorks(self):
             assert False
@@ -80,11 +87,12 @@ class RunnerTestCase(snakeunit.TestCase):
     def testSingleTestCase(self):
         output = StringIO.StringIO()
         runner = snakeunit.Runner(snakeunit.ConsoleFormatter(output))
-        runner.register(RunnerTestCase.ExampleTest)
+        runner.register(RunnerTestCase.PassingTestCase)
+        runner.register(RunnerTestCase.FailingTestCase)
         runner.run()
         # this test is order dependent...
         progressOutput = output.getvalue().split("\n")[0]
-        self.assertEqual("FSF.", progressOutput)
+        self.assertEqual("S.FF", progressOutput)
 
 class AssertionsTestCase(snakeunit.TestCase):
 
