@@ -41,6 +41,25 @@ class TestResult(object):
     def failed(klass, name, exception):
         return klass(name, 'failed', exception)
 
+class TestSuite:
+    def __init__(self, results = None):
+        self.results = results or []
+
+    def addResult(self, result):
+        self.results.append(result)
+
+    def totalCount(self):
+        return len(self.results)
+
+    def passedCount(self):
+        return sum(1 for res in self.results if res.didPass())
+
+    def skippedCount(self):
+        return sum(1 for res in self.results if res.wasSkipped())
+
+    def failedCount(self):
+        return sum(1 for res in self.results if res.didFail())
+
 class TestCase(object):
     TEST_NAME_REGEXP = re.compile('^test')
 
@@ -75,23 +94,19 @@ class ConsoleFormatter(object):
         elif result.wasSkipped():
             self.output.write('S')
 
-    def suiteFinished(self, suiteResults):
+    def suiteFinished(self, suite):
         self.output.write("\n")
         failedCounter = 0
         indent = ' ' * 2
         self.output.write("\n")
-        for result in suiteResults:
+        for result in suite.results:
             if result.didFail():
                 failedCounter += 1
                 self.output.write("%s%d) Failure:\n" % (indent, failedCounter))
                 self.output.write("%s(%s)\n" % (result.name, result.testCaseName()))
                 self.output.write("%s\n" % (str(result.exception)))
                 self.output.write("\n")
-        total = len(suiteResults)
-        passed = sum(1 for res in suiteResults if res.didPass())
-        skipped = sum(1 for res in suiteResults if res.wasSkipped())
-        failed = sum(1 for res in suiteResults if res.didFail())
-        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (total, passed, skipped, failed))
+        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (suite.totalCount(), suite.passedCount(), suite.skippedCount(), suite.failedCount()))
 
 
 class Runner(object):
@@ -99,19 +114,19 @@ class Runner(object):
         self.testCases = []
         self.output = sys.stdout
         self.formatter = formatter
+        self.testSuite = None
 
     def register(self, testCase):
         self.testCases.append(testCase)
 
     def run(self):
-        suiteResults = []
+        self.testSuite = TestSuite()
         for testCase in self.testCases:
-            testCaseResults = self.runTestCase(testCase)
-            suiteResults.extend(testCaseResults)
-        self.formatter.suiteFinished(suiteResults)
+            self.runTestCase(testCase)
+
+        self.formatter.suiteFinished(self.testSuite)
 
     def runTestCase(self, testCase):
-        results = []
         instance = testCase();
         for name, test in instance._tests().items():
             result = None
@@ -124,9 +139,7 @@ class Runner(object):
                 result = TestResult.skipped(name)
             result.testCase = testCase
             self.formatter.testExecuted(result)
-            results.append(result)
-
-        return results
+            self.testSuite.addResult(result)
 
     @classmethod
     def runAll(klass, formatter = ConsoleFormatter()):

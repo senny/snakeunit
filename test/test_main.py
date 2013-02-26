@@ -32,6 +32,31 @@ class TestResultTestCase(snakeunit.TestCase):
         self.assertEqual(False, result.didPass())
         self.assertEqual(True, result.wasSkipped())
 
+class TestSuiteTestCase(snakeunit.TestCase):
+
+    def prepareSuite(self):
+        self.suite = snakeunit.TestSuite()
+        self.suite.addResult(snakeunit.TestResult.passed('testAny'))
+        self.suite.addResult(snakeunit.TestResult.passed('testAny'))
+        self.suite.addResult(snakeunit.TestResult.skipped('testAny'))
+        self.suite.addResult(snakeunit.TestResult.failed('testFifthRed', AssertionError('some failure')))
+
+    def testCountsTotalResults(self):
+        self.prepareSuite()
+        self.assertEqual(4, self.suite.totalCount())
+
+    def testCountsPassedResults(self):
+        self.prepareSuite()
+        self.assertEqual(2, self.suite.passedCount())
+
+    def testCountsFailedResults(self):
+        self.prepareSuite()
+        self.assertEqual(1, self.suite.failedCount())
+
+    def testCountsSkippedResults(self):
+        self.prepareSuite()
+        self.assertEqual(1, self.suite.skippedCount())
+
 class ConsoleFormatterTestCase(snakeunit.TestCase):
 
     def testExecutedPrintsProgress(self):
@@ -48,9 +73,9 @@ class ConsoleFormatterTestCase(snakeunit.TestCase):
     def testPrintsSummary(self):
         output = StringIO.StringIO()
         formatter = snakeunit.ConsoleFormatter(output)
-        formatter.suiteFinished([snakeunit.TestResult.passed('testFirstGreen'),
-                                 snakeunit.TestResult.skipped('testSecondSkipped'),
-                                 snakeunit.TestResult.failed('testThirdRed', AssertionError('some failure'))])
+        formatter.suiteFinished(snakeunit.TestSuite([snakeunit.TestResult.passed('testFirstGreen'),
+                                                     snakeunit.TestResult.skipped('testSecondSkipped'),
+                                                     snakeunit.TestResult.failed('testThirdRed', AssertionError('some failure'))]))
 
         regexp = re.compile(re.escape('3 tests executed (Passed: 1, Skipped: 1, Failed: 1)'))
         self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
@@ -60,7 +85,7 @@ class ConsoleFormatterTestCase(snakeunit.TestCase):
         formatter = snakeunit.ConsoleFormatter(output)
         failedResult = snakeunit.TestResult.failed('testThirdRed', AssertionError('1!=2'))
         failedResult.testCase = ConsoleFormatterTestCase
-        formatter.suiteFinished([failedResult])
+        formatter.suiteFinished(snakeunit.TestSuite([failedResult]))
 
         regexp = re.compile(re.escape("1) Failure:\ntestThirdRed(ConsoleFormatterTestCase)\n1!=2"))
         self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
