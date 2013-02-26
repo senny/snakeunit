@@ -82,13 +82,17 @@ class RunnerTestCase(snakeunit.TestCase):
             # terminate somehow
             print "FAILED!"
 
+        def testAssertKeywordWorks(self):
+            assert False
+
     def testSingleTestCase(self):
         output = StringIO.StringIO()
         runner = snakeunit.Runner(snakeunit.ConsoleFormatter(output))
         runner.register(RunnerTestCase.ExampleTest)
         runner.run()
         # this test is order dependent...
-        self.assertEqual("FS.", output.getvalue().split("\n")[0])
+        progressOutput = output.getvalue().split("\n")[0]
+        self.assertEqual("FSF.", progressOutput)
 
 class AssertionsTestCase(snakeunit.TestCase):
 
