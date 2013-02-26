@@ -4,11 +4,12 @@ Python unit testing framework, written to learn Python.
 
 import re
 import sys
+import inspect
 
 class TestSkipped(Exception):
     None
 
-class TestResult:
+class TestResult(object):
 
     def __init__(self, name, state, exception = None):
         self.name = name
@@ -36,7 +37,7 @@ class TestResult:
     def failed(klass, name, exception):
         return klass(name, 'failed', exception)
 
-class TestCase:
+class TestCase(object):
     TEST_NAME_REGEXP = re.compile('^test')
 
     def _tests(self):
@@ -73,7 +74,7 @@ class TestCase:
 
         return testResults
 
-class ConsoleFormatter:
+class ConsoleFormatter(object):
 
     def __init__(self, output = sys.stdout):
         self.output = output
@@ -98,7 +99,6 @@ class ConsoleFormatter:
                 self.output.write("%s\n" % (result.name))
                 self.output.write("%s\n" % (str(result.exception)))
                 self.output.write("\n")
-        self.output.write("\n")
         total = len(suiteResults)
         passed = sum(1 for res in suiteResults if res.didPass())
         skipped = sum(1 for res in suiteResults if res.wasSkipped())
@@ -106,8 +106,8 @@ class ConsoleFormatter:
         self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (total, passed, skipped, failed))
 
 
-class Runner:
-    def __init__(self, formatter = ConsoleFormatter()):
+class Runner(object):
+    def __init__(self, formatter):
         self.testCases = []
         self.output = sys.stdout
         self.formatter = formatter
@@ -123,3 +123,13 @@ class Runner:
                 self.formatter.testExecuted(result)
             suiteResults.extend(results)
         self.formatter.suiteFinished(suiteResults)
+
+    @classmethod
+    def runAll(klass, formatter = ConsoleFormatter()):
+        runner = klass(formatter)
+        for testCase in TestCase.__subclasses__():
+            # HACK: only run top level classes
+            m = inspect.getmodule(testCase)
+            if getattr(m, testCase.__name__, []) is testCase:
+                runner.register(testCase)
+        runner.run()

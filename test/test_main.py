@@ -3,14 +3,6 @@ import StringIO
 import snakeunit
 import re
 
-class MainTestCase(snakeunit.TestCase):
-
-    def testFirst(self):
-        None
-
-    def testSecond(self):
-        None
-
 class TestResultTestCase(snakeunit.TestCase):
 
     def testHasAName(self):
@@ -114,11 +106,4 @@ class AssertionsTestCase(snakeunit.TestCase):
         except AssertionError:
             None
 
-
-runner = snakeunit.Runner()
-runner.register(MainTestCase)
-runner.register(TestResultTestCase)
-runner.register(AssertionsTestCase)
-runner.register(RunnerTestCase)
-runner.register(ConsoleFormatterTestCase)
-runner.run()
+from snakeunit import autorun
