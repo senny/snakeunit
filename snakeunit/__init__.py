@@ -7,7 +7,6 @@ import sys
 import inspect
 from time import time
 
-
 class TestSkipped(Exception):
     None
 
@@ -169,7 +168,7 @@ class Runner(object):
         runner = klass(formatter)
         for testCase in TestCase.__subclasses__():
             # HACK: only run top level classes
-            m = inspect.getmodule(testCase)
-            if getattr(m, testCase.__name__, []) is testCase:
+            module = inspect.getmodule(testCase)
+            if getattr(module, testCase.__name__, []) is testCase:
                 runner.register(testCase)
         runner.run()
