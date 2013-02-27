@@ -87,6 +87,12 @@ class TestCase(object):
 
         return tests;
 
+    def setup(self):
+        None
+
+    def teardown(self):
+        None
+
     def skip(self):
         raise TestSkipped()
 
@@ -148,17 +154,22 @@ class Runner(object):
 
         self.formatter.suiteFinished(self.testSuite)
 
+    def runTest(self, testCase, test, name):
+        testCase.setup()
+        try:
+            test()
+            return TestResult.passed(name)
+        except AssertionError, e:
+            return TestResult.failed(name, e)
+        except TestSkipped:
+            return TestResult.skipped(name)
+        finally:
+            testCase.teardown()
+
     def runTestCase(self, testCase):
         instance = testCase();
         for name, test in instance._tests().items():
-            result = None
-            try:
-                test()
-                result = TestResult.passed(name)
-            except AssertionError, e:
-                result = TestResult.failed(name, e)
-            except TestSkipped:
-                result = TestResult.skipped(name)
+            result = self.runTest(instance, test, name)
             result.testCase = testCase
             self.formatter.testExecuted(result)
             self.testSuite.addResult(result)

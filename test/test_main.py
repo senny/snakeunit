@@ -4,6 +4,14 @@ import snakeunit
 import re
 from time import sleep
 
+class TestCaseTestCase(snakeunit.TestCase):
+
+    def setup(self):
+        self.assignedDuringSetup = 1
+
+    def testSetup(self):
+        self.assertEqual(1, self.assignedDuringSetup, "The setup block was not executed")
+
 class TestResultTestCase(snakeunit.TestCase):
 
     def testHasAName(self):
