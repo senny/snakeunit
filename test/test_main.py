@@ -2,6 +2,7 @@ import sys
 import StringIO
 import snakeunit
 import re
+from time import sleep
 
 class TestResultTestCase(snakeunit.TestCase):
 
@@ -56,6 +57,19 @@ class TestSuiteTestCase(snakeunit.TestCase):
     def testCountsSkippedResults(self):
         self.prepareSuite()
         self.assertEqual(1, self.suite.skippedCount())
+
+    def testExecutionTimeStartsAtZero(self):
+        self.prepareSuite()
+        self.assertEqual(0, self.suite.totalTime())
+
+    def testMeasuersExecutionTime(self):
+        sleepTime = 0.1
+        self.prepareSuite()
+        self.suite.start()
+        sleep(sleepTime)
+        self.suite.finish()
+        self.assertEqual(True, self.suite.totalTime() > sleepTime,
+                         "total time %s should be bigger than sleep time of %s" % (self.suite.totalTime(), sleepTime))
 
 class ConsoleFormatterTestCase(snakeunit.TestCase):
 

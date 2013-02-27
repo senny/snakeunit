@@ -5,6 +5,8 @@ Python unit testing framework, written to learn Python.
 import re
 import sys
 import inspect
+from time import time
+
 
 class TestSkipped(Exception):
     None
@@ -44,6 +46,20 @@ class TestResult(object):
 class TestSuite:
     def __init__(self, results = None):
         self.results = results or []
+        self.startedAt = None
+        self.finishedAt = None
+
+    def start(self):
+        self.startedAt = time()
+
+    def finish(self):
+        self.finishedAt = time()
+
+    def totalTime(self):
+        if self.finishedAt and self.startedAt:
+            return self.finishedAt - self.startedAt
+        else:
+            return 0
 
     def addResult(self, result):
         self.results.append(result)
@@ -106,9 +122,11 @@ class ConsoleFormatter(object):
                 self.output.write("%s(%s)\n" % (result.name, result.testCaseName()))
                 self.output.write("%s\n" % (str(result.exception)))
                 self.output.write("\n")
-        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (suite.totalCount(), suite.passedCount(), suite.skippedCount(), suite.failedCount()))
-
-
+        self.output.write("snakeunit finished in %f seconds\n" % suite.totalTime())
+        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (suite.totalCount(),
+                                                                                         suite.passedCount(),
+                                                                                         suite.skippedCount(),
+                                                                                         suite.failedCount()))
 class Runner(object):
     def __init__(self, formatter):
         self.testCases = []
@@ -121,8 +139,10 @@ class Runner(object):
 
     def run(self):
         self.testSuite = TestSuite()
+        self.testSuite.start()
         for testCase in self.testCases:
             self.runTestCase(testCase)
+        self.testSuite.finish()
 
         self.formatter.suiteFinished(self.testSuite)
 
