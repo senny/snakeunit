@@ -13,9 +13,7 @@ class TestSkipped(Exception):
 class TestResult(object):
 
     def __init__(self, name, state, exception = None):
-        self.name = name
-        self.state = state
-        self.exception = exception
+        self.name, self.state, self.exception = name, state, exception
         self.testCase = None
 
     def testCaseName(self):
@@ -121,9 +119,8 @@ class ConsoleFormatter(object):
                                                                                                  suite.count('exception')))
 class Runner(object):
     def __init__(self, formatter):
-        self.testCases = []
-        self.output = sys.stdout
         self.formatter = formatter
+        self.testCases = []
         self.testSuite = None
 
     def register(self, testCase):
@@ -135,8 +132,15 @@ class Runner(object):
         for testCase in self.testCases:
             self.runTestCase(testCase)
         self.testSuite.finish()
-
         self.formatter.suiteFinished(self.testSuite)
+
+    def runTestCase(self, testCase):
+        instance = testCase();
+        for name, test in instance._tests().items():
+            result = self.runTest(instance, test, name)
+            result.testCase = testCase
+            self.formatter.testExecuted(result)
+            self.testSuite.addResult(result)
 
     def runTest(self, testCase, test, name):
         testCase.setup()
@@ -151,14 +155,6 @@ class Runner(object):
             return TestResult(name, 'exception', e)
         finally:
             testCase.teardown()
-
-    def runTestCase(self, testCase):
-        instance = testCase();
-        for name, test in instance._tests().items():
-            result = self.runTest(instance, test, name)
-            result.testCase = testCase
-            self.formatter.testExecuted(result)
-            self.testSuite.addResult(result)
 
     @classmethod
     def runAll(klass, formatter = ConsoleFormatter()):

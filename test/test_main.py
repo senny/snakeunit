@@ -4,14 +4,6 @@ import snakeunit
 import re
 from time import sleep
 
-class TestCaseTestCase(snakeunit.TestCase):
-
-    def setup(self):
-        self.assignedDuringSetup = 1
-
-    def testSetup(self):
-        self.assertEqual(1, self.assignedDuringSetup, "The setup block was not executed")
-
 class TestResultTestCase(snakeunit.TestCase):
 
     def testHasAName(self):
@@ -101,7 +93,6 @@ class ConsoleFormatterTestCase(snakeunit.TestCase):
         regexp = re.compile(re.escape("1) Failure:\ntestThirdRed(ConsoleFormatterTestCase)\n1!=2"))
         self.assertEqual(False, not regexp.search(output.getvalue()), output.getvalue())
 
-
 class RunnerTestCase(snakeunit.TestCase):
 
     class PassingTestCase(snakeunit.TestCase):
@@ -123,15 +114,39 @@ class RunnerTestCase(snakeunit.TestCase):
         def testAssertKeywordWorks(self):
             assert False
 
+    def setup(self):
+        self.output = StringIO.StringIO()
+        self.runner = snakeunit.Runner(snakeunit.ConsoleFormatter(self.output))
+
     def testSingleTestCase(self):
-        output = StringIO.StringIO()
-        runner = snakeunit.Runner(snakeunit.ConsoleFormatter(output))
-        runner.register(RunnerTestCase.PassingTestCase)
-        runner.register(RunnerTestCase.FailingTestCase)
-        runner.run()
+        self.runner.register(RunnerTestCase.PassingTestCase)
+        self.runner.register(RunnerTestCase.FailingTestCase)
+        self.runner.run()
         # this test is order dependent...
-        progressOutput = output.getvalue().split("\n")[0]
+        progressOutput = self.output.getvalue().split("\n")[0]
         self.assertEqual("S.FEF", progressOutput)
+
+    class SetupAndTeardownTestCase(snakeunit.TestCase):
+        # HACK: catch the output of the tests somehow...
+        buffer = ''
+
+        def setup(self):
+            RunnerTestCase.SetupAndTeardownTestCase.buffer += ";SETUP;"
+
+        def teardown(self):
+            RunnerTestCase.SetupAndTeardownTestCase.buffer += ";TEARDOWN;"
+
+        def test1(self):
+            RunnerTestCase.SetupAndTeardownTestCase.buffer += ";TEST;"
+
+        def test2(self):
+            RunnerTestCase.SetupAndTeardownTestCase.buffer += ";TEST;"
+
+    def testSetupAndTeardown(self):
+        self.runner.register(RunnerTestCase.SetupAndTeardownTestCase)
+        self.runner.run()
+        self.assertEqual(";SETUP;;TEST;;TEARDOWN;;SETUP;;TEST;;TEARDOWN;",
+                         RunnerTestCase.SetupAndTeardownTestCase.buffer)
 
 class AssertionsTestCase(snakeunit.TestCase):
 
