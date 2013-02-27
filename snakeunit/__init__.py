@@ -24,24 +24,6 @@ class TestResult(object):
     def didPass(self):
         return self.state == 'passed'
 
-    def wasSkipped(self):
-        return self.state == 'skipped'
-
-    def didFail(self):
-        return self.state == 'failed'
-
-    @classmethod
-    def skipped(klass, name):
-        return klass(name, 'skipped')
-
-    @classmethod
-    def passed(klass, name):
-        return klass(name, 'passed')
-
-    @classmethod
-    def failed(klass, name, exception):
-        return klass(name, 'failed', exception)
-
 class TestSuite:
     def __init__(self, results = None):
         self.results = results or []
@@ -66,14 +48,8 @@ class TestSuite:
     def totalCount(self):
         return len(self.results)
 
-    def passedCount(self):
-        return sum(1 for res in self.results if res.didPass())
-
-    def skippedCount(self):
-        return sum(1 for res in self.results if res.wasSkipped())
-
-    def failedCount(self):
-        return sum(1 for res in self.results if res.didFail())
+    def count(self, state):
+        return sum(1 for res in self.results if res.state == state)
 
 class TestCase(object):
     TEST_NAME_REGEXP = re.compile('^test')
@@ -107,34 +83,42 @@ class ConsoleFormatter(object):
     def __init__(self, output = sys.stdout):
         self.output = output
         self.indent = ' ' * 2
+        self.progressMapping = {
+            'passed': '.',
+            'failed': 'F',
+            'skipped': 'S',
+            'exception': 'E',
+            }
+        self.errorMapping = {
+            'failed': 'Failure',
+            'skipped': 'Skipped',
+            'exception': 'Exception',
+            }
 
     def writeLn(self, text = ""):
         self.output.write("%s\n" % text)
 
     def testExecuted(self, result):
-        if result.didPass():
-            self.output.write('.')
-        elif result.didFail():
-            self.output.write('F')
-        elif result.wasSkipped():
-            self.output.write('S')
+        self.output.write(self.progressMapping[result.state])
 
     def suiteFinished(self, suite):
         self.writeLn()
         self.writeLn()
         failedCounter = 0
         for result in suite.results:
-            if result.didFail():
+            if not result.didPass():
                 failedCounter += 1
-                self.writeLn("%s%d) Failure:" % (self.indent, failedCounter))
+                self.writeLn("%s%d) %s:" % (self.indent, failedCounter, self.errorMapping[result.state]))
                 self.writeLn("%s(%s)" % (result.name, result.testCaseName()))
-                self.writeLn("%s\n" % (str(result.exception)))
+                if result.exception:
+                    self.writeLn("%s\n" % (str(result.exception)))
                 self.writeLn()
         self.writeLn("snakeunit finished in %f seconds" % suite.totalTime())
-        self.writeLn("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)" % (suite.totalCount(),
-                                                                                  suite.passedCount(),
-                                                                                  suite.skippedCount(),
-                                                                                  suite.failedCount()))
+        self.writeLn("%s tests executed (Passed: %s, Skipped: %s, Failed: %s, Exception: %s)" % (suite.totalCount(),
+                                                                                                 suite.count('passed'),
+                                                                                                 suite.count('skipped'),
+                                                                                                 suite.count('failed'),
+                                                                                                 suite.count('exception')))
 class Runner(object):
     def __init__(self, formatter):
         self.testCases = []
@@ -158,11 +142,13 @@ class Runner(object):
         testCase.setup()
         try:
             test()
-            return TestResult.passed(name)
+            return TestResult(name, 'passed')
         except AssertionError, e:
-            return TestResult.failed(name, e)
+            return TestResult(name, 'failed', e)
         except TestSkipped:
-            return TestResult.skipped(name)
+            return TestResult(name, 'skipped')
+        except BaseException, e:
+            return TestResult(name, 'exception', e)
         finally:
             testCase.teardown()
 
