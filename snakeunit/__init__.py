@@ -101,6 +101,10 @@ class ConsoleFormatter(object):
 
     def __init__(self, output = sys.stdout):
         self.output = output
+        self.indent = ' ' * 2
+
+    def writeLn(self, text = ""):
+        self.output.write("%s\n" % text)
 
     def testExecuted(self, result):
         if result.didPass():
@@ -111,22 +115,21 @@ class ConsoleFormatter(object):
             self.output.write('S')
 
     def suiteFinished(self, suite):
-        self.output.write("\n")
+        self.writeLn()
+        self.writeLn()
         failedCounter = 0
-        indent = ' ' * 2
-        self.output.write("\n")
         for result in suite.results:
             if result.didFail():
                 failedCounter += 1
-                self.output.write("%s%d) Failure:\n" % (indent, failedCounter))
-                self.output.write("%s(%s)\n" % (result.name, result.testCaseName()))
-                self.output.write("%s\n" % (str(result.exception)))
-                self.output.write("\n")
-        self.output.write("snakeunit finished in %f seconds\n" % suite.totalTime())
-        self.output.write("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)\n" % (suite.totalCount(),
-                                                                                         suite.passedCount(),
-                                                                                         suite.skippedCount(),
-                                                                                         suite.failedCount()))
+                self.writeLn("%s%d) Failure:" % (self.indent, failedCounter))
+                self.writeLn("%s(%s)" % (result.name, result.testCaseName()))
+                self.writeLn("%s\n" % (str(result.exception)))
+                self.writeLn()
+        self.writeLn("snakeunit finished in %f seconds" % suite.totalTime())
+        self.writeLn("%s tests executed (Passed: %s, Skipped: %s, Failed: %s)" % (suite.totalCount(),
+                                                                                  suite.passedCount(),
+                                                                                  suite.skippedCount(),
+                                                                                  suite.failedCount()))
 class Runner(object):
     def __init__(self, formatter):
         self.testCases = []
