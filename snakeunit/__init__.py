@@ -78,20 +78,22 @@ class TestCase(object):
 
 class ConsoleFormatter(object):
 
+    progressMapping = {
+        'passed': '.',
+        'failed': 'F',
+        'skipped': 'S',
+        'exception': 'E',
+        }
+
+    errorMapping = {
+        'failed': 'Failure',
+        'skipped': 'Skipped',
+        'exception': 'Exception',
+        }
+
     def __init__(self, output = sys.stdout):
         self.output = output
         self.indent = ' ' * 2
-        self.progressMapping = {
-            'passed': '.',
-            'failed': 'F',
-            'skipped': 'S',
-            'exception': 'E',
-            }
-        self.errorMapping = {
-            'failed': 'Failure',
-            'skipped': 'Skipped',
-            'exception': 'Exception',
-            }
 
     def writeLn(self, text = ""):
         self.output.write("%s\n" % text)
