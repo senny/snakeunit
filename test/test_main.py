@@ -101,8 +101,7 @@ class RunnerTestCase(snakeunit.TestCase):
 
         def testSkipped(self):
             self.skip()
-            # terminate somehow
-            print "FAILED!"
+            raise AssertionError('Test should be skipped but was not.')
 
     class FailingTestCase(snakeunit.TestCase):
         def testFailure(self):
@@ -163,9 +162,10 @@ class AssertionsTestCase(snakeunit.TestCase):
     def testAssertEqualsNotEqual(self):
         try:
             self.assertEqual(1, 2)
-            # terminate somehow
-            print "FAILED!"
         except AssertionError:
-            None
+            pass
+        else:
+            raise AssertionError('assertEquals should raise AssertionError but did not.')
+
 
 from snakeunit import autorun
