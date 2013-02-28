@@ -8,7 +8,7 @@ import inspect
 from time import time
 
 class TestSkipped(Exception):
-    None
+    pass
 
 class TestResult(object):
 
@@ -62,10 +62,10 @@ class TestCase(object):
         return tests;
 
     def setup(self):
-        None
+        pass
 
     def teardown(self):
-        None
+        pass
 
     def skip(self):
         raise TestSkipped()
